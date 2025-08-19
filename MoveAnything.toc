@@ -1,8 +1,8 @@
-## Interface: 11000
+## Interface: 11200
 ## Title: MoveAnything!
-## Notes: vJ-11000.2
 ## Author: Skrag - Mod by Jason
-## Notes: Updated for patch 1.10 by Scorpia with Xanuri fix for MainMenuBar
+## Notes: Updated for patch 1.12 with support for Shagutweaks-extras raid frames
 ## SavedVariables: MoveAnything_CustomFrames, MoveAnything_CharacterSettings, MoveAnything_UseCharacterSettings
-## OptionalDeps: myAddOns, MCP
+## Version: GIT
+## OptionalDeps: myAddOns, MCP, ShaguTweaks, ShaguTweaks-extras
 MoveAnything.xml

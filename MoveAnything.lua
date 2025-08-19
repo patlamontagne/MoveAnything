@@ -162,6 +162,10 @@ MoveAnything_MoveOnlyWhenVisible["GroupLootFrame2"] = true;
 MoveAnything_MoveOnlyWhenVisible["GroupLootFrame3"] = true;
 MoveAnything_MoveOnlyWhenVisible["GroupLootFrame4"] = true;
 
+MoveAnything_DetachFromParent["ShaguTweaksRaidFrame"] = true;
+MoveAnything_DetachFromParent["ShaguTweaksRaidCluster"] = true;
+MoveAnything_DetachFromParent["ShaguTweaksRaidToggle"] = true;
+
 MoveAnything_DefaultFrameList = {
 
 	{ "MAOptions", "MoveAnything! Options Window" },
@@ -280,6 +284,11 @@ MoveAnything_DefaultFrameList = {
 	{ "TalentFrame", "Talent Tree" },
 	{ "PetStableFrame", "Pet Stable" },
 	{ "AuctionFrame", "Auction House" },
+
+		{ "Separator", "**** ShaguTweaks Raid Frames ****" },
+	{ "ShaguTweaksRaidToggle", "ShaguTweaks Raid Toggle Button" },
+	{ "ShaguTweaksRaidCluster", "ShaguTweaks Raid Cluster" },
+	{ "ShaguTweaksRaidFrame", "ShaguTweaks Raid Main Frame" },
 }
 
 function MoveAnything_AddPredefinedFrames( frameList )
@@ -307,24 +316,36 @@ function MoveAnything_ScaleAllowed( frameName )
 end
 
 function MAGetParent( frame )
-	if ( not frame or not frame.GetParent ) then return; end
-	if( frame:GetParent() == nil ) then
+	if ( not frame or not frame.GetParent ) then 
+		return UIParent;
+	end
+	
+	local parent = frame:GetParent()
+	if( parent == nil or parent == WorldFrame ) then
 		return UIParent;
 	end
 
-	return frame:GetParent();
+	return parent;
 end
 
+-- Also improve the MAGetScale function to handle nil values
 function MAGetScale( frame, effective )
-	if( frame:GetScale() == nil ) then
+	if( not frame or not frame.GetScale ) then
 		return 1;
 	end
-
+	
+	local scale = nil
 	if ( effective ) then
-		return frame:GetEffectiveScale();
+		scale = frame:GetEffectiveScale();
 	else
-		return frame:GetScale();
+		scale = frame:GetScale();
 	end
+	
+	if( scale == nil or scale == 0 ) then
+		return 1;
+	end
+	
+	return scale;
 end
 
 function MoveAnything_RefreshPositions()
@@ -998,17 +1019,57 @@ function MoveAnything_GetRelativeBottomLeft( tagFrame )
 end
 ]]
 
+MoveAnything_ProblematicParents = {
+    ["ShaguTweaksRaidCluster"] = "UIParent",
+    ["ShaguTweaksRaidToggle"] = "UIParent",
+}
+
+local MoveAnything_Original_GetRelativeBottomLeft = MoveAnything_GetRelativeBottomLeft
 function MoveAnything_GetRelativeBottomLeft( tagFrame )
-	x = tagFrame:GetLeft();
-	if( x ) then
-		x = x - MAGetParent( tagFrame ):GetLeft() * MAGetScale( MAGetParent( tagFrame ) ) / MAGetScale( tagFrame );
-	end
-	y = tagFrame:GetBottom();
-	if( y ) then
-		y = y - MAGetParent( tagFrame ):GetBottom() * MAGetScale( MAGetParent( tagFrame ) ) / MAGetScale( tagFrame );
-	end
-	return x,y;
+    if not tagFrame then
+        return 0, 0
+    end
+    
+    local frameName = tagFrame:GetName()
+    
+    -- Handle ShaguTweaks frames specially
+    if frameName and MoveAnything_ProblematicParents[frameName] then
+        local x = tagFrame:GetLeft()
+        local y = tagFrame:GetBottom()
+        
+        -- If frame doesn't have position, force one
+        if not x or not y then
+            tagFrame:ClearAllPoints()
+            tagFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+            x = tagFrame:GetLeft() or 0
+            y = tagFrame:GetBottom() or 0
+        end
+        
+        -- Return absolute coordinates for these frames
+        return x, y
+    end
+    
+    -- For ShaguTweaks main frame, ensure it has proper positioning
+    if frameName == "ShaguTweaksRaidFrame" then
+        local x = tagFrame:GetLeft()
+        local y = tagFrame:GetBottom()
+        
+        if not x or not y then
+            tagFrame:ClearAllPoints()
+            tagFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+            tagFrame:SetWidth(400)
+            tagFrame:SetHeight(300)
+            x = tagFrame:GetLeft() or 0
+            y = tagFrame:GetBottom() or 0
+        end
+        
+        return x, y
+    end
+    
+    -- Use original function for other frames
+    return MoveAnything_Original_GetRelativeBottomLeft(tagFrame)
 end
+
 
 function MoveAnything_Attach( moveFrame, tagFrame )
 	if( moveFrame.tagged ) then
@@ -1030,6 +1091,10 @@ function MoveAnything_Attach( moveFrame, tagFrame )
 	local x, y;
 	if( tagFrame:GetLeft() == nil ) then tagFrame:Show(); tagFrame:Hide(); end
 	x = tagFrame:GetLeft() * MAGetScale( tagFrame, 1 ) / UIParent:GetScale();
+	Print("Debug: tagFrame = " .. (tagFrame and tagFrame:GetName() or "nil"))
+	Print("Debug: parent = " .. (MAGetParent(tagFrame) and MAGetParent(tagFrame):GetName() or "nil"))
+	Print("Debug: parentLeft = " .. (MAGetParent(tagFrame) and MAGetParent(tagFrame):GetLeft() or "nil"))
+
 	x = x - MAGetParent( tagFrame ):GetLeft() * MAGetScale( MAGetParent( tagFrame ), 1 ) / UIParent:GetScale();
 	
 	y = tagFrame:GetBottom() * MAGetScale( tagFrame, 1 ) / UIParent:GetScale();

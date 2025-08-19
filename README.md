@@ -1,2 +1,1 @@
-# MoveAnything
-This is a re-host of MoveAnything version vJ-11000.2
+Fork of MoveAnything for 1.12 client with ShaguTweaks-extra raid frames support.
